@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nexus AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+    --bg: #eef3fb;
+    --bg2: #e4ecf7;
+    --sidebar-bg: rgba(255,255,255,0.55);
+    --sidebar-border: rgba(150,180,230,0.2);
+    --glass: rgba(255,255,255,0.6);
+    --glass-border: rgba(150,180,230,0.25);
+    --accent: #6d52e8;
+    --accent2: #9b7cf4;
+    --accent-light: rgba(109,82,232,0.1);
+    --text: #1a1f36;
+    --text2: #5a6480;
+    --text3: #9aa0b8;
+    --divider: rgba(150,180,230,0.18);
+    --hover: rgba(109,82,232,0.06);
+    --active: rgba(109,82,232,0.1);
+    --chip-bg: rgba(200,215,245,0.35);
+    --chip-border: rgba(150,180,230,0.3);
+    --user-start: #6d52e8;
+    --user-end: #9b7cf4;
+    --input-bg: rgba(255,255,255,0.7);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+    font-family: 'DM Sans', sans-serif;
+    color: var(--text);
+    height: 100vh;
+    display: flex;
+    overflow: hidden;
+    background-color: #dde8f5;
+    background-image:
+        radial-gradient(ellipse at 0% 0%, rgba(180,210,255,0.8) 0%, transparent 50%),
+        radial-gradient(ellipse at 100% 0%, rgba(200,185,255,0.6) 0%, transparent 45%),
+        radial-gradient(ellipse at 50% 100%, rgba(190,210,255,0.5) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 50%, rgba(210,195,255,0.4) 0%, transparent 40%);
+}
+
+/* ── SIDEBAR ── */
+.sidebar {
+    width: 255px;
+    min-width: 255px;
+    height: 100vh;
+    background: rgba(235,242,255,0.55);
+    border-right: 1px solid rgba(160,190,235,0.25);
+    backdrop-filter: blur(32px) saturate(180%);
+    -webkit-backdrop-filter: blur(32px) saturate(180%);
+    display: flex;
+    flex-direction: column;
+    padding: 18px 10px;
+    gap: 2px;
+    overflow: visible;
+    position: relative;
+    z-index: 10;
+}
+
+.sidebar-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 10px 16px;
+    border-bottom: 1px solid var(--divider);
+    margin-bottom: 4px;
+}
+.logo-img {
+    width: 28px; height: 28px;
+    border-radius: 7px;
+    object-fit: contain;
+    background: #000;
+}
+.logo-text {
+    font-family: 'Outfit', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    background: linear-gradient(135deg, #5b3fd4 0%, #9b7cf4 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.sb-btn {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 9px 11px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--text2);
+    transition: all 0.18s;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+    font-family: 'DM Sans', sans-serif;
+}
+.sb-btn:hover { background: var(--hover); color: var(--text); }
+.sb-btn.primary {
+    background: linear-gradient(135deg, #6d52e8 0%, #9b7cf4 100%);
+    color: #fff;
+    font-weight: 500;
+    margin-bottom: 4px;
+    box-shadow: 0 4px 16px rgba(109,82,232,0.25);
+}
+.sb-btn.primary:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(109,82,232,0.3); }
+.sb-btn svg { width: 14px; height: 14px; flex-shrink: 0; opacity: 0.7; }
+
+.sb-section {
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: 1.8px;
+    color: var(--text3);
+    padding: 12px 11px 4px;
+    text-transform: uppercase;
+}
+
+.chat-history {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+.chat-history::-webkit-scrollbar { width: 2px; }
+.chat-history::-webkit-scrollbar-thumb { background: rgba(109,82,232,0.15); border-radius: 2px; }
+
+.chat-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 11px;
+    border-radius: 9px;
+    cursor: pointer;
+    font-size: 12.5px;
+    color: var(--text2);
+    transition: all 0.18s;
+}
+.chat-item:hover { background: var(--hover); color: var(--text); }
+.chat-item.active {
+    background: var(--active);
+    color: var(--accent);
+    border: 1px solid rgba(109,82,232,0.15);
+}
+.chat-item-name { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.chat-item-actions { display:none; gap:3px; }
+.chat-item:hover .chat-item-actions { display:flex; }
+.ca-btn { background:none; border:none; cursor:pointer; color:var(--text3); padding:2px; border-radius:4px; transition:color 0.15s; display:flex; align-items:center; }
+.ca-btn:hover { color: var(--accent); }
+
+.sb-bottom {
+    border-top: 1px solid var(--divider);
+    padding-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+/* ── MAIN ── */
+.main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+    position: relative;
+}
+
+/* ── TOPBAR ── */
+.topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 13px 32px;
+    border-bottom: 1px solid var(--divider);
+    background: rgba(240,246,255,0.6);
+    backdrop-filter: blur(16px);
+}
+.topbar-left { display:flex; align-items:center; gap:10px; }
+.status-dot {
+    width: 7px; height: 7px;
+    background: #22c55e;
+    border-radius: 50%;
+    box-shadow: 0 0 8px rgba(34,197,94,0.5);
+    animation: glow 2.5s infinite;
+}
+@keyframes glow {
+    0%,100% { opacity:1; }
+    50% { opacity:0.5; }
+}
+.topbar-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: 12.5px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    color: var(--text2);
+}
+.topbar-right { display:flex; align-items:center; gap:6px; }
+.icon-btn {
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.5);
+    border: 1px solid rgba(150,180,230,0.3);
+    color: var(--text2);
+    cursor: pointer;
+    display:flex; align-items:center; justify-content:center;
+    transition: all 0.18s;
+}
+.icon-btn:hover { background: rgba(109,82,232,0.08); color: var(--accent); border-color: rgba(109,82,232,0.2); }
+
+/* ── MESSAGES ── */
+.messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 40px 72px;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+}
+.messages::-webkit-scrollbar { width: 3px; }
+.messages::-webkit-scrollbar-thumb { background: rgba(109,82,232,0.15); border-radius: 2px; }
+
+/* ── WELCOME ── */
+.welcome {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    gap: 12px;
+    padding: 50px 0 20px;
+}
+.welcome-logo {
+    width: 62px; height: 62px;
+    border-radius: 16px;
+    object-fit: contain;
+    background: #000;
+    margin-bottom: 8px;
+    box-shadow: 0 8px 32px rgba(109,82,232,0.2), 0 2px 8px rgba(0,0,0,0.1);
+}
+.welcome h1 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: 5px;
+    background: linear-gradient(135deg, #4a30c8 0%, #9b7cf4 60%, #7b9ef8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+.welcome p {
+    font-size: 13.5px;
+    color: var(--text2);
+    text-align: center;
+    max-width: 360px;
+    line-height: 1.7;
+    opacity: 0.7;
+}
+
+.chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    justify-content: center;
+    margin-top: 12px;
+}
+.chip {
+    background: var(--chip-bg);
+    border: 1px solid var(--chip-border);
+    border-radius: 20px;
+    padding: 7px 15px;
+    font-size: 12px;
+    color: var(--text2);
+    opacity: 0.65;
+    cursor: pointer;
+    transition: all 0.2s;
+    backdrop-filter: blur(8px);
+}
+.chip:hover {
+    background: rgba(109,82,232,0.1);
+    border-color: rgba(109,82,232,0.25);
+    color: var(--accent);
+    opacity: 1;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(109,82,232,0.12);
+}
+
+/* ── MESSAGE ROWS ── */
+.message-row {
+    display: flex;
+    flex-direction: column;
+    animation: msgIn 0.22s ease;
+}
+@keyframes msgIn {
+    from { opacity:0; transform:translateY(8px); }
+    to { opacity:1; transform:translateY(0); }
+}
+.message-row.user { align-items: flex-end; }
+.message-row.nexus { align-items: flex-start; }
+
+.msg-label {
+    font-size: 10.5px;
+    color: var(--text3);
+    margin-bottom: 6px;
+    font-weight: 500;
+    letter-spacing: 0.8px;
+    padding: 0 2px;
+    text-transform: uppercase;
+}
+
+.user-bubble {
+    background: linear-gradient(135deg, #6d52e8 0%, #9b7cf4 100%);
+    color: #fff;
+    padding: 11px 17px;
+    border-radius: 16px;
+    border-bottom-right-radius: 3px;
+    font-size: 14px;
+    line-height: 1.65;
+    max-width: 62%;
+    box-shadow: 0 4px 20px rgba(109,82,232,0.25), inset 0 1px 0 rgba(255,255,255,0.15);
+}
+
+.nexus-reply {
+    font-size: 14px;
+    line-height: 1.8;
+    color: #2a3050;
+    max-width: 78%;
+}
+.nexus-reply strong { color: #1a1f36; font-weight: 500; }
+.nexus-reply em { color: var(--text2); font-style: italic; }
+.nexus-reply h2 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 15px; font-weight: 600;
+    color: #1a1f36; margin: 14px 0 5px;
+}
+.nexus-reply h3 {
+    font-size: 11px; font-weight: 600;
+    color: var(--text3); margin: 10px 0 4px;
+    text-transform: uppercase; letter-spacing: 1.2px;
+}
+.nexus-reply .bullet { display:flex; gap:10px; margin:3px 0; }
+.nexus-reply .bullet-dot { color: var(--accent2); flex-shrink:0; }
+
+/* ── TYPING ── */
+.typing-dots {
+    display: none;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 0;
+}
+.typing-dots span {
+    width: 6px; height: 6px;
+    background: var(--accent2);
+    border-radius: 50%;
+    opacity: 0.4;
+    animation: bnc 1.3s infinite;
+}
+.typing-dots span:nth-child(2) { animation-delay:0.2s; }
+.typing-dots span:nth-child(3) { animation-delay:0.4s; }
+@keyframes bnc {
+    0%,80%,100% { transform:translateY(0); opacity:0.4; }
+    40% { transform:translateY(-5px); opacity:0.9; }
+}
+
+/* ── INPUT ── */
+.input-wrap { padding: 12px 72px 22px; }
+
+.input-box {
+    background: rgba(255,255,255,0.65);
+    border: 1px solid rgba(150,180,230,0.3);
+    border-radius: 14px;
+    padding: 11px 13px;
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    backdrop-filter: blur(20px);
+    box-shadow: 0 2px 12px rgba(109,82,232,0.06), inset 0 1px 0 rgba(255,255,255,0.8);
+}
+.input-box:focus-within {
+    border-color: rgba(109,82,232,0.3);
+    box-shadow: 0 4px 20px rgba(109,82,232,0.1), inset 0 1px 0 rgba(255,255,255,0.8);
+}
+#inputRow { display:flex; flex:1; align-items:flex-end; gap:8px; }
+.input-box textarea {
+    flex: 1;
+    background: none;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-size: 13.5px;
+    font-family: 'DM Sans', sans-serif;
+    resize: none;
+    line-height: 1.6;
+    max-height: 110px;
+    min-height: 22px;
+}
+.input-box textarea::placeholder { color: var(--text3); }
+
+.input-actions { display:flex; align-items:center; gap:5px; }
+.inp-btn {
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    border: 1px solid rgba(150,180,230,0.3);
+    background: rgba(255,255,255,0.5);
+    color: var(--text2);
+    cursor: pointer;
+    display:flex; align-items:center; justify-content:center;
+    transition: all 0.18s;
+}
+.inp-btn:hover { background: var(--hover); color: var(--accent); border-color: rgba(109,82,232,0.2); }
+.inp-btn.send {
+    background: linear-gradient(135deg, #6d52e8 0%, #9b7cf4 100%);
+    border: none;
+    color: #fff;
+    box-shadow: 0 3px 12px rgba(109,82,232,0.3);
+}
+.inp-btn.send:hover { opacity:0.88; transform:scale(1.05); box-shadow:0 4px 16px rgba(109,82,232,0.4); }
+.inp-btn.mic.recording {
+    background: rgba(239,68,68,0.1);
+    border-color: rgba(239,68,68,0.3);
+    color: #ef4444;
+}
+
+.recording-row {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 7px;
+    flex: 1;
+    padding: 3px 0;
+}
+.waveform { display:flex; align-items:center; gap:3px; height:30px; }
+.waveform span {
+    display:block; width:3px; border-radius:3px;
+    background: linear-gradient(to top, #6d52e8, #9b7cf4);
+    height:4px; transition:height 0.08s ease;
+}
+.listen-label { font-size:11.5px; color:var(--text3); letter-spacing:1px; }
+.cancel-btn {
+    background: rgba(239,68,68,0.08);
+    border: 1px solid rgba(239,68,68,0.2);
+    color: #ef4444;
+    padding: 5px 14px; border-radius:8px; cursor:pointer;
+    font-size:12px; font-family:'DM Sans',sans-serif; transition:all 0.18s;
+}
+.cancel-btn:hover { background:rgba(239,68,68,0.15); }
+
+.stop-speak-btn {
+    display: none;
+    background: rgba(239,68,68,0.07);
+    border: 1px solid rgba(239,68,68,0.18);
+    color: #ef4444;
+    padding: 6px 20px; border-radius:9px; cursor:pointer;
+    font-size:12px; font-family:'DM Sans',sans-serif; transition:all 0.18s;
+    width:100%; text-align:center; margin-top:5px;
+}
+.stop-speak-btn:hover { background:rgba(239,68,68,0.13); }
+
+.input-hint {
+    font-size: 10.5px;
+    color: var(--text3);
+    text-align: center;
+    margin-top: 7px;
+    opacity: 0.6;
+}
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+    <div class="sidebar-logo">
+        <img src="/static/logo.png" class="logo-img" alt="N" onerror="this.style.display='none'">
+        <span class="logo-text">NEXUS</span>
+    </div>
+
+    <button class="sb-btn primary" onclick="newChat()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        New Chat
+    </button>
+
+    <button class="sb-btn" onclick="toggleSearch()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Search Chats
+    </button>
+    <input id="searchInput" placeholder="Search..." oninput="searchChats(this.value)"
+        style="display:none; width:100%; background:rgba(109,82,232,0.07); border:1px solid rgba(109,82,232,0.15); border-radius:9px; padding:8px 12px; font-size:12.5px; color:#1a1f36; outline:none; font-family:'DM Sans',sans-serif; margin-bottom:4px;">
+
+    <div class="sb-section">Recent</div>
+    <div class="chat-history" id="chatHistory"></div>
+
+    <div class="sb-bottom">
+        <button class="sb-btn" onclick="toggleSystemPrompt()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            System Prompt
+        </button>
+        <button class="sb-btn" onclick="toggleVoiceSettings()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+            Voice Settings
+        </button>
+        <div id="voicePanel" style="display:none; background:rgba(255,255,255,0.75); backdrop-filter:blur(20px); border:1px solid rgba(150,180,230,0.3); border-radius:12px; padding:12px; margin-top:4px;">
+            <div style="font-size:10px; font-weight:600; letter-spacing:1px; color:#5a6480; text-transform:uppercase; margin-bottom:10px;">Voice Settings</div>
+            <div style="font-size:12px; color:#5a6480; margin-bottom:4px;">Voice</div>
+            <select id="voiceSelect" onchange="saveVoiceSettings()" style="width:100%; background:rgba(255,255,255,0.6); border:1px solid rgba(150,180,230,0.25); border-radius:8px; padding:6px 8px; font-size:12px; color:#1a1f36; outline:none; margin-bottom:10px; font-family:'DM Sans',sans-serif;">
+                <option value="en-US-GuyNeural">Guy (US Male)</option>
+                <option value="en-US-ChristopherNeural">Christopher (US Male)</option>
+                <option value="en-US-EricNeural">Eric (US Male)</option>
+                <option value="en-US-JennyNeural">Jenny (US Female)</option>
+                <option value="en-US-AriaNeural">Aria (US Female)</option>
+            </select>
+            <div style="font-size:12px; color:#5a6480; margin-bottom:4px;">Speed</div>
+            <input type="range" min="-50" max="50" value="20" id="voiceSpeed" oninput="updateSpeedLabel(this.value); saveVoiceSettings()" style="width:100%; margin-bottom:4px;">
+            <div style="font-size:11px; color:#9aa0b8; text-align:center;" id="speedLabel">+20%</div>
+        </div>
+        <button class="sb-btn" onclick="toggleProfile()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+            Profile
+        </button>
+        <div id="profilePanel" style="display:none; background:rgba(255,255,255,0.75); backdrop-filter:blur(20px); border:1px solid rgba(150,180,230,0.3); border-radius:12px; padding:12px; margin-top:4px;">
+            <div style="font-size:10px; font-weight:600; letter-spacing:1px; color:#5a6480; text-transform:uppercase; margin-bottom:10px;">Profile</div>
+            <input id="profileName" placeholder="Your name" style="width:100%; background:rgba(255,255,255,0.6); border:1px solid rgba(150,180,230,0.25); border-radius:8px; padding:7px 10px; font-size:12.5px; color:#1a1f36; outline:none; margin-bottom:8px; font-family:'DM Sans',sans-serif;">
+            <input id="profileCity" placeholder="Your city (for weather)" style="width:100%; background:rgba(255,255,255,0.6); border:1px solid rgba(150,180,230,0.25); border-radius:8px; padding:7px 10px; font-size:12.5px; color:#1a1f36; outline:none; margin-bottom:8px; font-family:'DM Sans',sans-serif;">
+            <button onclick="saveProfile()" style="width:100%; background:linear-gradient(135deg,#6d52e8,#9b7cf4); color:#fff; border:none; border-radius:8px; padding:7px; font-size:12px; cursor:pointer; font-family:'DM Sans',sans-serif;">Save Profile</button>
+        </div>
+    </div>
+    <!-- System Prompt Panel -->
+        <div id="systemPromptPanel" style="display:none; position:absolute; bottom:140px; left:10px; right:10px; background:rgba(255,255,255,0.85); backdrop-filter:blur(20px); border:1px solid rgba(150,180,230,0.3); border-radius:12px; padding:12px; z-index:100;">
+            <div style="font-size:11px; font-weight:600; letter-spacing:1px; color:#5a6480; text-transform:uppercase; margin-bottom:8px;">System Prompt</div>
+            <textarea id="systemPromptInput" rows="5" placeholder="You are Nexus, a helpful AI assistant..." style="width:100%; background:rgba(255,255,255,0.6); border:1px solid rgba(150,180,230,0.25); border-radius:8px; padding:8px; font-size:12px; font-family:'DM Sans',sans-serif; color:#1a1f36; resize:none; outline:none; line-height:1.6;"></textarea>
+            <div style="display:flex; gap:6px; margin-top:8px;">
+                <button onclick="saveSystemPrompt()" style="flex:1; background:linear-gradient(135deg,#6d52e8,#9b7cf4); color:#fff; border:none; border-radius:8px; padding:7px; font-size:12px; cursor:pointer; font-family:'DM Sans',sans-serif;">Save</button>
+                <button onclick="toggleSystemPrompt()" style="flex:1; background:rgba(150,180,230,0.15); color:#5a6480; border:1px solid rgba(150,180,230,0.25); border-radius:8px; padding:7px; font-size:12px; cursor:pointer; font-family:'DM Sans',sans-serif;">Cancel</button>
+            </div>
+        </div>
+</div>
+
+<div class="main">
+    <div class="topbar">
+        <div class="topbar-left">
+            <div class="status-dot"></div>
+            <span class="topbar-title">NEXUS AI</span>
+        </div>
+        <div class="topbar-right">
+            <button class="icon-btn" title="Clear" onclick="clearChat()">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+            </button>
+        </div>
+    </div>
+
+    <div class="messages" id="messages">
+        <div class="welcome" id="welcome">
+            <img src="/static/logo.png" class="welcome-logo" alt="" onerror="this.style.display='none'">
+            <h1>NEXUS</h1>
+            <p>Your personal AI assistant. Ask anything, control your PC, check weather, set reminders.</p>
+            <div class="chips">
+                <div class="chip" onclick="sendChip(this)">What's the weather today?</div>
+                <div class="chip" onclick="sendChip(this)">Open YouTube</div>
+                <div class="chip" onclick="sendChip(this)">What time is it?</div>
+                <div class="chip" onclick="sendChip(this)">Tell me something interesting</div>
+                <div class="chip" onclick="sendChip(this)">Take a screenshot</div>
+            </div>
+        </div>
+        <div class="typing-dots" id="typing">
+            <span></span><span></span><span></span>
+        </div>
+    </div>
+
+    <div class="input-wrap">
+        <div class="input-box">
+            <div id="inputRow">
+                <textarea id="userInput" placeholder="Ask Nexus anything..." rows="1"
+                    onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+                <div class="input-actions">
+                    <input type="file" id="imageUpload" accept="image/*" style="display:none" onchange="handleImageUpload(this)">
+                    <button class="inp-btn" onclick="document.getElementById('imageUpload').click()" title="Upload image">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                    </button>
+                    <button class="inp-btn mic" id="micBtn" onclick="toggleMic()">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                    </button>
+                    <button class="inp-btn send" onclick="sendMessage()">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="recording-row" id="recordingRow">
+                <div class="waveform" id="waveform">
+                    <span></span><span></span><span></span>
+                    <span></span><span></span><span></span>
+                    <span></span><span></span><span></span>
+                </div>
+                <div class="listen-label">Listening...</div>
+                <button class="cancel-btn" onclick="cancelMic()">✕ Cancel</button>
+            </div>
+        </div>
+        <button class="stop-speak-btn" id="stopSpeakBtn" onclick="stopSpeaking()">⏹ Stop Speaking</button>
+        <div class="input-hint">Enter to send · Shift+Enter for new line · Say "nexus" to activate voice</div>
+    </div>
+</div>
+
+<script>
+const messagesDiv = document.getElementById("messages");
+const userInput = document.getElementById("userInput");
+const typingEl = document.getElementById("typing");
+const welcomeEl = document.getElementById("welcome");
+const micBtn = document.getElementById("micBtn");
+const inputRow = document.getElementById("inputRow");
+const recordingRow = document.getElementById("recordingRow");
+const waveform = document.getElementById("waveform");
+const stopSpeakBtn = document.getElementById("stopSpeakBtn");
+
+let chats = JSON.parse(localStorage.getItem("nexus_chats") || "[]");
+let currentChatId = null;
+let currentMessages = [];
+let isSending = false;
+let uploadedImageBase64 = null;
+let uploadedImageType = null;
+
+function saveChatToHistory(id, messages) {
+    const idx = chats.findIndex(c => c.id === id);
+    const title = messages.find(m => m.role === "user")?.text?.slice(0, 38) || "New Chat";
+    if (idx >= 0) { chats[idx].messages = messages; chats[idx].title = title; }
+    else { chats.unshift({ id, title, messages }); }
+    localStorage.setItem("nexus_chats", JSON.stringify(chats));
+    renderChatHistory();
+}
+
+function renderChatHistory() {
+    const el = document.getElementById("chatHistory");
+    el.innerHTML = "";
+    chats.forEach(chat => {
+        const item = document.createElement("div");
+        item.className = "chat-item" + (chat.id === currentChatId ? " active" : "");
+        item.innerHTML = `
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.4;flex-shrink:0"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            <span class="chat-item-name">${chat.title}</span>
+            <div class="chat-item-actions">
+                <button class="ca-btn" onclick="renameChat('${chat.id}',event)" title="Rename">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </button>
+                <button class="ca-btn" onclick="deleteChat('${chat.id}',event)" title="Delete">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+                </button>
+            </div>`;
+        item.onclick = (e) => { if (!e.target.closest('.ca-btn')) loadChat(chat.id); };
+        el.appendChild(item);
+    });
+}
+
+function newChat() {
+    currentChatId = Date.now().toString();
+    currentMessages = [];
+    welcomeEl.style.display = "flex";
+    messagesDiv.querySelectorAll(".message-row").forEach(m => m.remove());
+    userInput.value = "";
+    renderChatHistory();
+}
+
+function loadChat(id) {
+    const chat = chats.find(c => c.id === id);
+    if (!chat) return;
+    currentChatId = id;
+    currentMessages = [...chat.messages];
+    welcomeEl.style.display = "none";
+    messagesDiv.querySelectorAll(".message-row").forEach(m => m.remove());
+    chat.messages.forEach(m => addMessage(m.text, m.role, true));
+    renderChatHistory();
+}
+
+function deleteChat(id, e) {
+    e.stopPropagation();
+    chats = chats.filter(c => c.id !== id);
+    localStorage.setItem("nexus_chats", JSON.stringify(chats));
+    if (currentChatId === id) newChat();
+    else renderChatHistory();
+}
+
+function renameChat(id, e) {
+    e.stopPropagation();
+    const chat = chats.find(c => c.id === id);
+    if (!chat) return;
+    const newName = prompt("Rename chat:", chat.title);
+    if (newName && newName.trim()) {
+        chat.title = newName.trim();
+        localStorage.setItem("nexus_chats", JSON.stringify(chats));
+        renderChatHistory();
+    }
+}
+
+function clearChat() {
+    currentMessages = [];
+    messagesDiv.querySelectorAll(".message-row").forEach(m => m.remove());
+    welcomeEl.style.display = "flex";
+}
+
+function exportChat() {
+    if (!currentMessages.length) return;
+    const lines = currentMessages.map(m =>
+        `[${m.role === "user" ? "You" : "Nexus"}]\n${m.text}\n`
+    ).join("\n");
+    const blob = new Blob([lines], { type: "text/plain" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `nexus-chat-${new Date().toISOString().slice(0,10)}.txt`;
+    a.click();
+}
+
+function formatMessage(text) {
+    return text
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/^## (.*$)/gm, '<h2>$1</h2>')
+        .replace(/^### (.*$)/gm, '<h3>$1</h3>')
+        .replace(/^- (.*$)/gm, '<div class="bullet"><span class="bullet-dot">•</span><span>$1</span></div>')
+        .replace(/\n/g, '<br>');
+}
+
+function addMessage(text, sender, instant = false) {
+    welcomeEl.style.display = "none";
+    const row = document.createElement("div");
+    row.className = `message-row ${sender}`;
+    if (sender === "user") {
+        const imgHtml = (sender === "user" && uploadedImageBase64)
+            ? `<img src="data:${uploadedImageType};base64,${uploadedImageBase64}" style="max-width:200px;border-radius:8px;margin-bottom:6px;display:block;">`
+            : "";
+        row.innerHTML = `<div class="msg-label">You</div><div class="user-bubble">${imgHtml}${text}</div>`;
+        messagesDiv.insertBefore(row, typingEl);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    } else {
+        row.innerHTML = `<div class="msg-label">Nexus</div><div class="nexus-reply" id="curReply"></div>`;
+        messagesDiv.insertBefore(row, typingEl);
+        const el = document.getElementById("curReply");
+        const fmt = formatMessage(text);
+        if (instant) {
+            el.innerHTML = fmt; el.removeAttribute("id");
+        } else {
+            let i = 0;
+            const iv = setInterval(() => {
+                i += 5;
+                el.innerHTML = fmt.slice(0, i);
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                if (i >= fmt.length) { el.innerHTML = fmt; el.removeAttribute("id"); clearInterval(iv); }
+            }, 14);
+        }
+    }
+    currentMessages.push({ role: sender, text });
+    if (currentChatId) saveChatToHistory(currentChatId, currentMessages);
+}
+
+async function checkAndShowImage() {
+    const res = await fetch("/latest_image");
+    const data = await res.json();
+    if (data.available) {
+        const replies = document.querySelectorAll(".nexus-reply");
+        if (replies.length > 0) {
+            replies[replies.length - 1].innerHTML += `<img src="${data.url}?t=${Date.now()}" style="max-width:100%;border-radius:12px;margin-top:10px;display:block;border:1px solid rgba(150,180,230,0.2);">`;
+        }
+    }
+}
+
+async function sendMessage(source = "text") {
+    if (isSending) return;
+    const text = userInput.value.trim();
+    if (!text) return;
+    isSending = true;
+    userInput.disabled = true;
+    if (!currentChatId) { currentChatId = Date.now().toString(); currentMessages = []; }
+    addMessage(text, "user");
+    userInput.value = "";
+    autoResize(userInput);
+    typingEl.style.display = "flex";
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    const res = await fetch("/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            message: text,
+            source,
+            image: uploadedImageBase64 || null,
+            image_type: uploadedImageType || null
+        })
+    });
+    // clear image after sending
+    if (uploadedImageBase64) clearImage();
+    const data = await res.json();
+    typingEl.style.display = "none";
+    if (data.response === "IMAGE_GENERATED") {
+        addMessage("Here's your generated image:", "nexus");
+        await checkAndShowImage();
+    } else {
+        addMessage(data.response, "nexus");
+    }
+    if (data.title && currentChatId) {
+        const idx = chats.findIndex(c => c.id === currentChatId);
+        if (idx >= 0) { chats[idx].title = data.title; localStorage.setItem("nexus_chats", JSON.stringify(chats)); renderChatHistory(); }
+        else { saveChatToHistory(currentChatId, currentMessages); }
+    }
+    isSending = false;
+    userInput.disabled = false;
+    userInput.focus();
+    if (source === "voice") {
+        stopSpeakBtn.style.display = "block";
+        setTimeout(() => startSpeakingCheck(), 1500);
+    }
+}
+
+function handleKey(e) {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+function autoResize(el) {
+    el.style.height = "auto";
+    el.style.height = Math.min(el.scrollHeight, 110) + "px";
+}
+
+function sendChip(el) { userInput.value = el.textContent; sendMessage(); }
+
+async function stopSpeaking() {
+    await fetch("/stop", { method: "POST" });
+    stopSpeakBtn.style.display = "none";
+}
+
+function startSpeakingCheck() {
+    let started = false, polls = 0;
+    const iv = setInterval(async () => {
+        const res = await fetch("/is_speaking");
+        const data = await res.json();
+        polls++;
+        if (data.speaking) started = true;
+        if (started && !data.speaking) { stopSpeakBtn.style.display = "none"; clearInterval(iv); }
+        if (!started && polls >= 8) { stopSpeakBtn.style.display = "none"; clearInterval(iv); }
+    }, 500);
+}
+
+let recognition = null, cancelled = false;
+let audioCtx = null, analyser = null, waveIv = null;
+
+function showRecording() { inputRow.style.display = "none"; recordingRow.style.display = "flex"; startWaveform(); }
+function showNormal() { inputRow.style.display = "flex"; recordingRow.style.display = "none"; stopWaveform(); }
+
+function startWaveform() {
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+        audioCtx = new AudioContext();
+        analyser = audioCtx.createAnalyser();
+        audioCtx.createMediaStreamSource(stream).connect(analyser);
+        analyser.fftSize = 32;
+        const bars = waveform.querySelectorAll("span");
+        waveIv = setInterval(() => {
+            const arr = new Uint8Array(analyser.frequencyBinCount);
+            analyser.getByteFrequencyData(arr);
+            bars.forEach((b, i) => { b.style.height = Math.max(4, (arr[i % arr.length] / 255) * 26) + "px"; });
+        }, 50);
+    });
+}
+function stopWaveform() {
+    if (waveIv) clearInterval(waveIv);
+    if (audioCtx) audioCtx.close();
+    audioCtx = null; analyser = null;
+    waveform.querySelectorAll("span").forEach(b => b.style.height = "4px");
+}
+
+function toggleMic() {
+    if (recognition) { recognition.stop(); return; }
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { alert("Use Chrome or Edge for voice input."); return; }
+    recognition = new SR();
+    recognition.lang = "en-US";
+    recognition.start();
+    cancelled = false;
+    showRecording();
+    recognition.onresult = (e) => {
+        if (cancelled) return;
+        userInput.value = e.results[0][0].transcript;
+        showNormal();
+        sendMessage("voice");
+    };
+    recognition.onend = () => { showNormal(); recognition = null; cancelled = false; };
+}
+
+function toggleSystemPrompt() {
+    const panel = document.getElementById("systemPromptPanel");
+    const isHidden = panel.style.display === "none";
+    panel.style.display = isHidden ? "block" : "none";
+    if (isHidden) {
+        const saved = localStorage.getItem("nexus_system_prompt") || "";
+        document.getElementById("systemPromptInput").value = saved;
+    }
+}
+
+function saveSystemPrompt() {
+    const prompt = document.getElementById("systemPromptInput").value.trim();
+    localStorage.setItem("nexus_system_prompt", prompt);
+    toggleSystemPrompt();
+    // send to Flask so Python picks it up
+    fetch("/set_system_prompt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt })
+    });
+}
+
+function cancelMic() {
+    cancelled = true;
+    if (recognition) { recognition.stop(); recognition = null; }
+    showNormal();
+}
+
+function toggleSearch() {
+    const el = document.getElementById("searchInput");
+    el.style.display = el.style.display === "none" ? "block" : "none";
+    if (el.style.display === "block") el.focus();
+    else { el.value = ""; renderChatHistory(); }
+}
+
+function searchChats(query) {
+    const el = document.getElementById("chatHistory");
+    el.innerHTML = "";
+    const filtered = query ? chats.filter(c => c.title.toLowerCase().includes(query.toLowerCase())) : chats;
+    filtered.forEach(chat => {
+        const item = document.createElement("div");
+        item.className = "chat-item" + (chat.id === currentChatId ? " active" : "");
+        item.innerHTML = `
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.4;flex-shrink:0"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            <span class="chat-item-name">${chat.title}</span>
+            <div class="chat-item-actions">
+                <button class="ca-btn" onclick="renameChat('${chat.id}',event)">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </button>
+                <button class="ca-btn" onclick="deleteChat('${chat.id}',event)">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+                </button>
+            </div>`;
+        item.onclick = (e) => { if (!e.target.closest('.ca-btn')) loadChat(chat.id); };
+        el.appendChild(item);
+    });
+}
+
+function toggleVoiceSettings() {
+    const el = document.getElementById("voicePanel");
+    el.style.display = el.style.display === "none" ? "block" : "none";
+    if (el.style.display === "block") loadVoiceSettings();
+}
+
+function updateSpeedLabel(val) {
+    document.getElementById("speedLabel").textContent = (val >= 0 ? "+" : "") + val + "%";
+}
+
+function saveVoiceSettings() {
+    const voice = document.getElementById("voiceSelect").value;
+    const speed = document.getElementById("voiceSpeed").value;
+    localStorage.setItem("nexus_voice", voice);
+    localStorage.setItem("nexus_speed", speed);
+    fetch("/set_voice", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ voice, speed })
+    });
+}
+
+function loadVoiceSettings() {
+    const voice = localStorage.getItem("nexus_voice") || "en-US-GuyNeural";
+    const speed = localStorage.getItem("nexus_speed") || "20";
+    document.getElementById("voiceSelect").value = voice;
+    document.getElementById("voiceSpeed").value = speed;
+    updateSpeedLabel(speed);
+}
+
+function toggleProfile() {
+    const el = document.getElementById("profilePanel");
+    el.style.display = el.style.display === "none" ? "block" : "none";
+    if (el.style.display === "block") {
+        document.getElementById("profileName").value = localStorage.getItem("nexus_name") || "";
+        document.getElementById("profileCity").value = localStorage.getItem("nexus_city") || "";
+    }
+}
+
+function saveProfile() {
+    const name = document.getElementById("profileName").value.trim();
+    const city = document.getElementById("profileCity").value.trim();
+    if (name) localStorage.setItem("nexus_name", name);
+    if (city) localStorage.setItem("nexus_city", city);
+    toggleProfile();
+    fetch("/set_profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, city })
+    });
+}
+
+function handleImageUpload(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const base64 = e.target.result.split(",")[1];
+        uploadedImageBase64 = base64;
+        uploadedImageType = file.type;
+        // show preview in input area
+        let preview = document.getElementById("imgPreview");
+        if (!preview) {
+            preview = document.createElement("div");
+            preview.id = "imgPreview";
+            preview.style.cssText = "display:flex;align-items:center;gap:8px;padding:6px 0;font-size:12px;color:#5a6480;";
+            document.getElementById("inputRow").insertBefore(preview, document.getElementById("inputRow").firstChild);
+        }
+        preview.innerHTML = `
+            <img src="${e.target.result}" style="width:36px;height:36px;border-radius:6px;object-fit:cover;border:1px solid rgba(150,180,230,0.3);">
+            <span>Image ready</span>
+            <button onclick="clearImage()" style="background:none;border:none;cursor:pointer;color:#9aa0b8;font-size:14px;">✕</button>
+        `;
+        userInput.placeholder = "Ask anything about this image...";
+    };
+    reader.readAsDataURL(file);
+}
+
+function clearImage() {
+    uploadedImageBase64 = null;
+    uploadedImageType = null;
+    const preview = document.getElementById("imgPreview");
+    if (preview) preview.remove();
+    userInput.placeholder = "Ask Nexus anything...";
+    document.getElementById("imageUpload").value = "";
+}
+
+setInterval(async () => {
+    const res = await fetch("/notifications");
+    const data = await res.json();
+    if (data.message) addMessage("🔔 " + data.message, "nexus");
+}, 5000);
+
+renderChatHistory();
+newChat();
+</script>
+</body>
+</html>
