@@ -625,9 +625,13 @@ let uploadedImageType = null;
 
 function saveChatToHistory(id, messages) {
     const idx = chats.findIndex(c => c.id === id);
-    const title = messages.find(m => m.role === "user")?.text?.slice(0, 38) || "New Chat";
-    if (idx >= 0) { chats[idx].messages = messages; chats[idx].title = title; }
-    else { chats.unshift({ id, title, messages }); }
+    if (idx >= 0) {
+        chats[idx].messages = messages;
+        // never overwrite title once it's been set by AI
+    } else {
+        const title = messages.find(m => m.role === "user")?.text?.slice(0, 38) || "New Chat";
+        chats.unshift({ id, title, messages });
+    }
     localStorage.setItem("nexus_chats", JSON.stringify(chats));
     renderChatHistory();
 }
@@ -797,10 +801,19 @@ async function sendMessage(source = "text") {
     } else {
         addMessage(data.response, "nexus");
     }
-    if (data.title && currentChatId) {
-        const idx = chats.findIndex(c => c.id === currentChatId);
-        if (idx >= 0) { chats[idx].title = data.title; localStorage.setItem("nexus_chats", JSON.stringify(chats)); renderChatHistory(); }
-        else { saveChatToHistory(currentChatId, currentMessages); }
+    const chatIdx = chats.findIndex(c => c.id === currentChatId);
+    if (chatIdx >= 0 && chats[chatIdx].messages.length <= 2) {
+        const titleRes = await fetch("/get_title", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message: text })
+        });
+        const titleData = await titleRes.json();
+        if (titleData.title) {
+            chats[chatIdx].title = titleData.title;
+            localStorage.setItem("nexus_chats", JSON.stringify(chats));
+            renderChatHistory();
+        }
     }
     isSending = false;
     userInput.disabled = false;
