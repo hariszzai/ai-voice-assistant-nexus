@@ -759,3 +759,4 @@ def voice_assistant_loop():
 if __name__ == "__main__":
     # run standalone voice only mode without UI
     voice_assistant_loop()
+# Updated
