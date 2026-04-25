@@ -11,7 +11,6 @@ import speech_recognition as sr
 import webbrowser
 import requests
 import musicLibrary as ml
-from gtts import gTTS
 import edge_tts
 import asyncio
 import pygame
@@ -21,7 +20,7 @@ import pyautogui
 import time
 from shared import notifications_queue
 import json
-from shared import notifications_queue, custom_system_prompt, voice_mode_active, voice_settings, user_profile # Suppress noisy logs
+from shared import notifications_queue, custom_system_prompt, voice_mode_active, voice_settings, user_profile
 from dotenv import load_dotenv
 load_dotenv()
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
@@ -49,7 +48,6 @@ reminder_thread = threading.Thread(target=check_reminders, daemon=True)
 reminder_thread.start()
 
 r = sr.Recognizer()
-r.energy_threshold = 300
 r.dynamic_energy_threshold = False
 
 def clean_for_speech(text):
@@ -73,7 +71,7 @@ def speak(text):
     filename = f"temp_{int(time.time() * 1000)}.mp3"
     
     async def _speak():
-        v = voice_settings.get("voice", "en-US-GuyNeural")
+        v = voice_settings.get("voice", "en-US-BrianNeural")
         s = voice_settings.get("speed", "20")
         rate = f"+{s}%" if int(s) >= 0 else f"{s}%"
         communicate = edge_tts.Communicate(text, voice=v, rate=rate)
@@ -107,14 +105,15 @@ def calibrate_microphone():
 
 
 def fetch_news():
-    speak("Fetching top news...")
     res = requests.get(
         f"https://newsapi.org/v2/top-headlines?country=us&apiKey={NEWS_API_KEY}"
     )
     if res.status_code == 200:
         articles = res.json().get("articles", [])
-        for article in articles[:3]:
-            speak(article["title"])
+        headlines = [a["title"] for a in articles[:3]]
+        # combine into one speak call so no conflict
+        full_text = "Here are the top headlines. " + ". Next, ".join(headlines)
+        speak(full_text)
     else:
         speak("Sorry, couldn't fetch news right now.")
 
@@ -134,7 +133,7 @@ def fetch_weather(city="Delhi"):
         description = data["weather"][0]["description"]
         humidity = data["main"]["humidity"]
 
-        return f"Weather in {city_name}: {description}, {temp}°C, feels like {feels_like}°C, humidity {humidity}%."
+        return f"Weather in {city_name}: {description}, {temp} degrees celsius, feels like {feels_like} degrees celsius, humidity {humidity}%."
 
     except Exception as e:
         return "Sorry, couldn't fetch weather right now."
@@ -276,7 +275,11 @@ def analyze_image(question, image_base64, image_type="image/jpeg"):
             }
         )
         data = response.json()
-        return data["choices"][0]["message"]["content"]
+        reply = data["choices"][0]["message"]["content"]
+        # add to conversation history so follow up questions work
+        conversation_history.append({"role": "user", "content": f"[Image uploaded] {question}"})
+        conversation_history.append({"role": "assistant", "content": reply})
+        return reply
     except Exception as e:
         print(f"Vision error: {e}")
         return "Sorry, I couldn't analyze that image."
@@ -354,6 +357,8 @@ Possible intents:
 - generate_image (user wants to create/generate an image or picture)
 - get_battery (user asks about battery level or status)
 - volume_control (user wants to change volume, mute, unmute)
+- change_voice (user wants to change voice to male or female)
+- exit_conversation (user wants to stop, end, goodbye, dismiss assistant)
 - general_query (anything else — questions, conversation)
 
 Return this exact JSON format:
@@ -522,6 +527,19 @@ def process_command(command):
         result = control_volume(command)
         speak(result)
 
+    elif intent == "change_voice":
+        if "female" in command or "girl" in command or "woman" in command:
+            voice_settings["voice"] = "en-US-JennyNeural"
+            result = "Switching to female voice."
+        else:
+            voice_settings["voice"] = "en-US-GuyNeural"
+            result = "Switching back to male voice."
+        speak(result) 
+
+    # elif any(phrase in command for phrase in ["describe yourself", "who are you", "what are you", "introduce yourself", "about yourself"]):
+    #     description = "I am Nexus — an advanced AI assistant that controls your PC, answers anything, analyzes and generate images, and holds natural conversations and much more. Built from scratch, combining automation with artificial intelligence."
+    #     speak(description)
+
     elif intent == "general_query":
         query = intent_data.get("query") or command
         answer = ask_ai(query)
@@ -656,55 +674,87 @@ def process_command_text(command):
 
     elif intent == "volume_control":
         return control_volume(command)
+    
+    elif intent == "change_voice":
+        if "female" in command or "girl" in command or "woman" in command:
+            voice_settings["voice"] = "en-US-JennyNeural"
+            result = "Switching to female voice."
+        else:
+            voice_settings["voice"] = "en-US-GuyNeural"
+            result = "Switching back to male voice."
+        return result
+
+    # elif any(phrase in command for phrase in ["describe yourself", "who are you", "what are you", "introduce yourself", "about yourself"]):
+    #     description = "I am Nexus — an advanced AI assistant that controls your PC, answers anything, analyzes and generate images, and holds natural conversations and much more. Built from scratch, combining automation with artificial intelligence."
+    #     return description
 
     elif intent == "general_query":
         query = intent_data.get("query") or command
         return ask_ai(query, mode="text")
+
+def wake_sequence():
+    now = datetime.datetime.now()
+    hour = now.hour
+    if hour < 12:
+        period = "in the morning"
+    elif hour < 17:
+        period = "in the afternoon"
+    elif hour < 20:
+        period = "in the evening"
+    else:
+        period = "at night"
+    time_str = now.strftime("%I:%M").lstrip("0")
     
-    
+    weather_msg = ""
+    try:
+        city = user_profile.get("city") or "Delhi"
+        res = requests.get(
+            f"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={WEATHER_API_KEY}&units=metric"
+        )
+        data = res.json()
+        if data.get("cod") == 200:
+            temp = round(data["main"]["temp"])
+            desc = data["weather"][0]["description"]
+            weather_msg = f"Weather today in {city} is {desc}, {temp} degrees Celsius."
+    except:
+        pass
+
+    speak(f"Greetings, Sir. It's {time_str} {period}. {weather_msg} What can I do for you today?")
+    time.sleep(2)
+    webbrowser.open("http://localhost:5000/")
+    # time.sleep(2)
+    # webbrowser.open("spotify:track:1XrSjpNe49IiygZfzb74pk")    
+    # time.sleep(2)
+    # subprocess.Popen([r"C:\Users\hp\AppData\Local\Programs\Microsoft VS Code\Code.exe", "--reuse-window"])
+
 def voice_assistant_loop():
     calibrate_microphone()
     speak("Hello sir, just say the name for the move.")
-    while True:
-        word = listen(timeout=2, phrase_limit=3)
-        if word == WAKE_WORD:
-            speak("Yes sir?")
-            voice_mode_active["value"] = True
-            failed_attempts = 0
-            
-            while True:
-                # 1. Start listening IMMEDIATELY (even if Nexus is still talking)
-                command = listen(timeout=8, phrase_limit=None)
-                
-                if not command:
-                    # Only trigger "I'm still here" if Nexus ISN'T currently speaking
-                    # This prevents Nexus from interrupting itself with "I'm still here"
-                    if not pygame.mixer.music.get_busy():
-                        failed_attempts += 1
-                        if failed_attempts >= 2:
-                            speak("I'm still here, go ahead.")
-                            failed_attempts = 0
-                    continue
-                
-                # 2. IF A COMMAND IS DETECTED, STOP CURRENT SPEECH IMMEDIATELY
-                if pygame.mixer.music.get_busy():
-                    print("Interrupt detected! Stopping speech...")
-                    pygame.mixer.music.stop()
-                    pygame.mixer.music.unload()
+    print("Listening for wake word...")
+    activated = False
 
-                failed_attempts = 0
-                
-                # 3. Check for exit commands
-                if any(phrase in command for phrase in ["stop", "goodbye", "bye", "exit", "that's all", "thats all", "tata"]):
+    while True:
+        if not activated:
+            word = listen(timeout=2, phrase_limit=3)
+            if word and any(w in word for w in [WAKE_WORD, "wake up nexus", "wakeup nexus", "hey nexus"]):
+                print(f"Wake word detected: {word}")
+                activated = True
+                wake_sequence()
+        else:
+            voice_mode_active["value"] = True
+            while True:
+                command = listen(timeout=8, phrase_limit=None)
+                if not command:
+                    continue
+                exit_intent = detect_intent(command)
+                if exit_intent.get("intent") == "exit_conversation" or any(phrase in command for phrase in ["stop", "goodbye", "bye", "exit", "that's all", "thatsall", "tata"]):
                     voice_mode_active["value"] = False
                     speak("Alright, goodbye sir. Going back to standby.")
+                    activated = False
                     break
-                
-                # 4. Process the new command (the interrupt)
                 print(f"VOICE LOOP PROCESSING: {command}")
                 process_command(command)
-                
-                time.sleep(0.2)
+                time.sleep(0.5)
 
 if __name__ == "__main__":
     # run standalone voice only mode without UI
