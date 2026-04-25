@@ -47,8 +47,13 @@ def chat():
         response = process_command_text(user_message)
     if source == "voice":
         speak(response)
-    title = generate_chat_title(user_message)
-    return jsonify({"response": response, "title": title})
+    return jsonify({"response": response})
+
+@app.route("/get_title", methods=["POST"])
+def get_title():
+    data = request.get_json()
+    title = generate_chat_title(data.get("message", "New Chat"))
+    return jsonify({"title": title})
 
 @app.route("/set_voice", methods=["POST"])
 def set_voice():
