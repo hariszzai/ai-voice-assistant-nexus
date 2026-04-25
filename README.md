@@ -1,6 +1,5 @@
-## Demo
-[Watch Demo Video]https://1drv.ms/v/c/66693ed06834f234/IQBbs66LjsPbTqvqugT9b7i0AdQ_ozkpNIl6AyU6LaM9Dl8?e=g7Rvkp
-# AI Voice Assistant (Nexus)
+## 🚀 Demo
+[Watch Demo Video](https://1drv.ms/v/c/66693ed06834f234/IQBbs66LjsPbTqvqugT9b7i0AdQ_ozkpNIl6AyU6LaM9Dl8?e=g7Rvkp)
 
 Nexus is a Python-based AI voice assistant capable of performing system-level tasks, handling voice and text commands, and interacting through a web-based UI.
 
