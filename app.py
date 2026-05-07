@@ -45,6 +45,10 @@ def chat():
         response = analyze_image(user_message, image_data, image_type)
     else:
         response = process_command_text(user_message)
+    if response and response != "IMAGE_GENERATED":
+        from database import save_message
+        save_message("default", "user", user_message)
+        save_message("default", "assistant", response)
     if source == "voice":
         speak(response)
     return jsonify({"response": response})
@@ -59,16 +63,20 @@ def get_title():
 def set_voice():
     data = request.get_json()
     from shared import voice_settings
+    from database import save_voice_settings
     voice_settings["voice"] = data.get("voice", "en-US-GuyNeural")
     voice_settings["speed"] = data.get("speed", "20")
+    save_voice_settings(voice_settings["voice"], voice_settings["speed"])  # persist to DB
     return jsonify({"status": "ok"})
 
 @app.route("/set_profile", methods=["POST"])
 def set_profile():
     data = request.get_json()
     from shared import user_profile
+    from database import save_profile
     user_profile["name"] = data.get("name", "")
     user_profile["city"] = data.get("city", "")
+    save_profile(user_profile["name"], user_profile["city"])  # persist to DB
     return jsonify({"status": "ok"})
 
 @app.route("/stop", methods=["POST"])
@@ -110,10 +118,11 @@ def get_notifications():
     return jsonify({"message": None})
 
 if __name__ == "__main__":
-    # start voice assistant in background thread
+    from main import check_reminders
     voice_thread = threading.Thread(target=voice_assistant_loop, daemon=True)
     voice_thread.start()
-    # start Flask — UI runs alongside voice mode
+    reminder_thread = threading.Thread(target=check_reminders, daemon=True)
+    reminder_thread.start()
     app.run(debug=False)
     # debug=False is important — debug=True causes Flask to start twice
     # which would launch two voice threads

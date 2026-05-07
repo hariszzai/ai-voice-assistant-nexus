@@ -28,24 +28,25 @@ NEWS_API_KEY = os.getenv("NEWS_API_KEY")
 WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
 HF_API_KEY = os.getenv("HF_API_KEY")
 WAKE_WORD = "nexus"
-conversation_history = []
-reminders = []
+
+from database import (save_reminder, load_reminders, delete_reminder,
+                      save_message, load_history, save_voice_settings)
+
+conversation_history = []  # still in-memory for current session speed
+# reminders now load from database on startup
+reminders = load_reminders()
 
 def check_reminders():
     while True:
-        now = datetime.datetime.now().strftime("%I:%M %p").lower()
+        now = datetime.datetime.now().strftime("%I:%M %p").lower().lstrip("0")
         for reminder in reminders[:]:
-            if reminder["time"] == now:
+            reminder_time = reminder["time"].lower().lstrip("0")
+            if reminder_time == now:
                 speak(f"Reminder: {reminder['message']}")
                 notifications_queue.append(f"Reminder: {reminder['message']}")
-                # push to UI queue so chat shows it too
                 reminders.remove(reminder)
+                delete_reminder(reminder["id"])
         time.sleep(30)
-            # check every 30 sec
-# start reminder checker in background thread when program starts
-reminder_thread = threading.Thread(target=check_reminders, daemon=True)
-# daemon=True means thread dies when main program exits
-reminder_thread.start()
 
 r = sr.Recognizer()
 r.dynamic_energy_threshold = False
@@ -237,7 +238,9 @@ def set_reminder(command):
         else:
             reminder_time = datetime.datetime.strptime(time_str, "%I%p").strftime("%I:%M %p").lower()
         
-        reminders.append({"time": reminder_time, "message": message})
+        save_reminder(reminder_time, message)
+        new_reminder = load_reminders()[-1]
+        reminders.append(new_reminder)
         return f"Reminder set for {reminder_time} — {message}."
     
     except Exception as e:
@@ -406,7 +409,6 @@ def process_command(command):
     if intent == "open_website":
         url = intent_data.get("website") or "https://google.com"
         webbrowser.open(url)
-        speak(f"Opening {url}")
 
     elif intent == "open_app":
         app = (intent_data.get("app") or "").lower()
@@ -494,14 +496,15 @@ def process_command(command):
         r_time = intent_data.get("reminder_time")
         r_msg = intent_data.get("reminder_message")
         if r_time and r_msg:
-            # clean up time string and parse it
             r_time = r_time.strip().lower().replace(" ", "")
             try:
                 if ":" in r_time:
                     reminder_time = datetime.datetime.strptime(r_time, "%I:%M%p").strftime("%I:%M %p").lower()
                 else:
                     reminder_time = datetime.datetime.strptime(r_time, "%I%p").strftime("%I:%M %p").lower()
-                reminders.append({"time": reminder_time, "message": r_msg})
+                save_reminder(reminder_time, r_msg)
+                new_reminder = load_reminders()[-1]
+                reminders.append(new_reminder)
                 speak(f"Reminder set for {reminder_time} — {r_msg}.")
             except:
                 speak("Sorry, I couldn't parse that time. Try saying 5pm or 5:30pm.")
@@ -534,7 +537,8 @@ def process_command(command):
         else:
             voice_settings["voice"] = "en-US-GuyNeural"
             result = "Switching back to male voice."
-        speak(result) 
+        save_voice_settings(voice_settings["voice"], voice_settings["speed"])  # ADD THIS LINE
+        speak(result)
 
     # elif any(phrase in command for phrase in ["describe yourself", "who are you", "what are you", "introduce yourself", "about yourself"]):
     #     description = "I am Nexus — an advanced AI assistant that controls your PC, answers anything, analyzes and generate images, and holds natural conversations and much more. Built from scratch, combining automation with artificial intelligence."
@@ -555,81 +559,143 @@ def process_command_text(command):
     if intent == "open_website":
         url = intent_data.get("website") or "https://google.com"
         webbrowser.open(url)
-        return f"Opening {url}."
+        response = f"Opening {url}."
+        conversation_history.append({"role": "user", "content": command})
+        conversation_history.append({"role": "assistant", "content": response})
+        return response
 
     elif intent == "open_app":
         app = (intent_data.get("app") or "").lower()
         if "notepad" in app:
             subprocess.Popen("notepad.exe")
-            return "Opening Notepad."
+            response = "Opening Notepad."
+            conversation_history.append({"role": "user", "content": command})
+            conversation_history.append({"role": "assistant", "content": response})
+            return response
         elif "calculator" in app or "calc" in app:
             subprocess.Popen("calc.exe")
-            return "Opening Calculator."
+            response = "Opening Calculator."
+            conversation_history.append({"role": "user", "content": command})
+            conversation_history.append({"role": "assistant", "content": response})
+            return response
         elif "camera" in app:
             subprocess.Popen("start microsoft.windows.camera:", shell=True)
-            return "Opening Camera."
+            response = "Opening Camera."
+            conversation_history.append({"role": "user", "content": command})
+            conversation_history.append({"role": "assistant", "content": response})
+            return response
         elif "whatsapp" in app:
             os.system("start shell:AppsFolder\\5319275A.WhatsAppDesktop_cv1g1gvanyjgm!App")
-            return "Opening WhatsApp."
+            response = "Opening whatsapp."
+            conversation_history.append({"role": "user", "content": command})
+            conversation_history.append({"role": "assistant", "content": response})
+            return response
         elif "capcut" in app:
             os.system("start shell:AppsFolder\\Bytedance.CapCut")
-            return "Opening CapCut."
+            response = "Opening capcut."
+            conversation_history.append({"role": "user", "content": command})
+            conversation_history.append({"role": "assistant", "content": response})
+            return response
         elif "instagram" in app:
             os.system("start shell:AppsFolder\\Facebook.InstagramBeta_8xx8rvfyw5nnt!App")
-            return "Opening Instagram."
+            response = "Opening instagram."
+            conversation_history.append({"role": "user", "content": command})
+            conversation_history.append({"role": "assistant", "content": response})
+            return response
         elif "reddit" in app:
             os.system("start shell:AppsFolder\\redditTV.Reddit_99kbdge22ed1a!App")
-            return "Opening Reddit."
+            response = "Opening reddit."
+            conversation_history.append({"role": "user", "content": command})
+            conversation_history.append({"role": "assistant", "content": response})
+            return response
         elif "pinterest" in app:
             os.system("start shell:AppsFolder\\1424566A.147190DF3DE79_5byw4zywtsh80!App")
-            return "Opening Pinterest."
+            response = "Opening pinterest."
+            conversation_history.append({"role": "user", "content": command})
+            conversation_history.append({"role": "assistant", "content": response})
+            return response
         elif "davinci" in app or "resolve" in app:
             os.system('start "" "{6D809377-6AF0-444B-8957-A3773F02200E}\\Blackmagic Design\\DaVinci Resolve\\Resolve.exe"')
-            return "Opening DaVinci Resolve."
+            response = "Opening davinci resolve."
+            conversation_history.append({"role": "user", "content": command})
+            conversation_history.append({"role": "assistant", "content": response})
+            return response
         elif "netflix" in app:
             os.system("start shell:AppsFolder\\4DF9E0F8.Netflix_mcm4njqhnhss8!Netflix.App")
-            return "Opening netflix."
+            response = "Opening netflix."
+            conversation_history.append({"role": "user", "content": command})
+            conversation_history.append({"role": "assistant", "content": response})
+            return response
         elif "store" in app or "microsoft store" in app:
             os.system("start ms-windows-store:")
-            return f"Opening Microsoft Store."
+            response = "Opening microsoft store."
+            conversation_history.append({"role": "user", "content": command})
+            conversation_history.append({"role": "assistant", "content": response})
+            return response
         else:
             os.system(f"start {app}")
-            return f"Opening {app}."
+            response = "Opening it."
+            conversation_history.append({"role": "user", "content": command})
+            conversation_history.append({"role": "assistant", "content": response})
+            return response
 
     elif intent == "play_music":
         song = (intent_data.get("song") or "").lower()
-        return play_music(song)
+        response = play_music(song)
+        conversation_history.append({"role": "user", "content": command})
+        conversation_history.append({"role": "assistant", "content": response})
+        return response
 
     elif intent == "get_time":
-        now = datetime.datetime.now().strftime("%I:%M %p")
-        return f"Current time is {now}."
+            now = datetime.datetime.now().strftime("%I:%M %p")
+            response = f"Current time is {now}."
+            conversation_history.append({"role": "user", "content": command})
+            conversation_history.append({"role": "assistant", "content": response})
+            return response
 
     elif intent == "get_date":
         today = datetime.datetime.now().strftime("%B %d, %Y")
-        return f"Today is {today}."
+        response = f"Today is {today}."
+        conversation_history.append({"role": "user", "content": command})
+        conversation_history.append({"role": "assistant", "content": response})
+        return response
 
     elif intent == "take_screenshot":
         screenshot = pyautogui.screenshot()
         screenshot_path = os.path.join(os.path.expanduser("~"), "Desktop", "screenshot.png")
         screenshot.save(screenshot_path)
-        return "Screenshot saved to your desktop."
+        response = "Screenshot saved to your desktop."
+        conversation_history.append({"role": "user", "content": command})
+        conversation_history.append({"role": "assistant", "content": response})
+        return response
 
     elif intent == "lock_pc":
         os.system("rundll32.exe user32.dll,LockWorkStation")
-        return "Locking the screen."
+        response = "Locking the screen."
+        conversation_history.append({"role": "user", "content": command})
+        conversation_history.append({"role": "assistant", "content": response})
+        return response
 
     elif intent == "shutdown":
         os.system("shutdown /s /t 5")
-        return "Shutting down in 5 seconds."
+        response = "Shutting down in 5 seconds."
+        conversation_history.append({"role": "user", "content": command})
+        conversation_history.append({"role": "assistant", "content": response})
+        return response
 
     elif intent == "restart":
         os.system("shutdown /r /t 5")
-        return "Restarting in 5 seconds."
+        response = "Restarting in 5 seconds."
+        conversation_history.append({"role": "user", "content": command})
+        conversation_history.append({"role": "assistant", "content": response})
+        return response
 
     elif intent == "get_weather":
-        # city = intent_data.get("city") or "Delhi"
         city = user_profile.get("city") or "Delhi"
-        return fetch_weather(city)
+        response = fetch_weather(city)
+        conversation_history.append({"role": "user", "content": command})
+        conversation_history.append({"role": "assistant", "content": response})
+        return response
 
     elif intent == "get_news":
         res = requests.get(
@@ -638,9 +704,12 @@ def process_command_text(command):
         if res.status_code == 200:
             articles = res.json().get("articles", [])
             headlines = [a["title"] for a in articles[:3]]
-            return "Here are the top headlines: " + " | ".join(headlines)
+            response = "Here are the top headlines: " + " | ".join(headlines)
         else:
-            return "Sorry, couldn't fetch news right now."
+            response = "Sorry, couldn't fetch news right now."
+        conversation_history.append({"role": "user", "content": command})
+        conversation_history.append({"role": "assistant", "content": response})
+        return response
 
     elif intent == "set_reminder":
         r_time = intent_data.get("reminder_time")
@@ -652,7 +721,9 @@ def process_command_text(command):
                     reminder_time = datetime.datetime.strptime(r_time, "%I:%M%p").strftime("%I:%M %p").lower()
                 else:
                     reminder_time = datetime.datetime.strptime(r_time, "%I%p").strftime("%I:%M %p").lower()
-                reminders.append({"time": reminder_time, "message": r_msg})
+                save_reminder(reminder_time, r_msg)          # save to database
+                new_reminder = load_reminders()[-1]          # get it back with its DB id
+                reminders.append(new_reminder)               # add to in-memory list
                 return f"Reminder set for {reminder_time} — {r_msg}."
             except:
                 return "Sorry, I couldn't parse that time. Try saying 5pm or 5:30pm."
@@ -670,10 +741,16 @@ def process_command_text(command):
             return "Sorry, couldn't generate that image right now."
         
     elif intent == "get_battery":
-        return get_battery()
+        response = get_battery()
+        conversation_history.append({"role": "user", "content": command})
+        conversation_history.append({"role": "assistant", "content": response})
+        return response
 
     elif intent == "volume_control":
-        return control_volume(command)
+        response = control_volume(command)
+        conversation_history.append({"role": "user", "content": command})
+        conversation_history.append({"role": "assistant", "content": response})
+        return response
     
     elif intent == "change_voice":
         if "female" in command or "girl" in command or "woman" in command:
@@ -682,15 +759,25 @@ def process_command_text(command):
         else:
             voice_settings["voice"] = "en-US-GuyNeural"
             result = "Switching back to male voice."
+        save_voice_settings(voice_settings["voice"], voice_settings["speed"])  # ADD THIS LINE
         return result
 
     # elif any(phrase in command for phrase in ["describe yourself", "who are you", "what are you", "introduce yourself", "about yourself"]):
     #     description = "I am Nexus — an advanced AI assistant that controls your PC, answers anything, analyzes and generate images, and holds natural conversations and much more. Built from scratch, combining automation with artificial intelligence."
     #     return description
 
+    elif intent == "exit_conversation":
+        response = "You're welcome! Let me know if you need anything else."
+        conversation_history.append({"role": "user", "content": command})
+        conversation_history.append({"role": "assistant", "content": response})
+        return response
+
     elif intent == "general_query":
         query = intent_data.get("query") or command
         return ask_ai(query, mode="text")
+    
+    else:
+        return ask_ai(command, mode="text")
 
 def wake_sequence():
     now = datetime.datetime.now()
@@ -720,8 +807,8 @@ def wake_sequence():
         pass
 
     speak(f"Greetings, Sir. It's {time_str} {period}. {weather_msg} What can I do for you today?")
-    time.sleep(2)
-    webbrowser.open("http://localhost:5000/")
+    # time.sleep(2)
+    # webbrowser.open("http://localhost:5000/")
     # time.sleep(2)
     # webbrowser.open("spotify:track:1XrSjpNe49IiygZfzb74pk")    
     # time.sleep(2)
@@ -759,4 +846,3 @@ def voice_assistant_loop():
 if __name__ == "__main__":
     # run standalone voice only mode without UI
     voice_assistant_loop()
-# Updated

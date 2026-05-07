@@ -6,20 +6,30 @@ Nexus is a Python-based AI voice assistant capable of performing system-level ta
 ## Features
 - Wake word activation ("Nexus")
 - Voice and text command support (via UI)
+- Answers questions using Groq's Llama AI model
 - Opens applications
-- Plays music
-- Set reminders
+- Plays music (YouTube/Spotify)
+- Set reminders with persistent storage
+- Reminders continue working even after restarting Nexus
 - Takes screenshots
 - Shutdown / Restart / Sleep system
+- Control system volume
+- Check battery status
+- Real-time weather updates
+- Fetch latest news headlines
 - Image generation
-- Image analysis
+- Image analysis using Vision AI
+- Conversation memory using database storage
+- Saves and loads chat history across sessions
+- Customizable AI personality
 - Automates system-level tasks
 
 ## Tech Stack
 - Python (Core Logic)
 - Flask (Backend)
 - HTML, CSS, JavaScript (Frontend UI)
-- APIs (for AI functionalities)
+- Database Storage
+- APIs & AI Models
 
 ## How It Works
 - Backend built using Flask handles requests and system operations  
